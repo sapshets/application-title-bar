@@ -22,6 +22,7 @@ PlasmoidItem {
     property TaskManager.TasksModel tasksModel
     property real widgetHeight: (vertical ? width : height)
     property real elementHeight: widgetHeight - plasmoid.configuration.widgetMargins * 2
+    property real iconSize: plasmoid.configuration.windowIconSize > 0 ? plasmoid.configuration.windowIconSize : root.elementHeight
     property real buttonMargins: plasmoid.configuration.widgetButtonsMargins
     property real buttonHeight: elementHeight
     property real buttonWidth: (plasmoid.configuration.widgetButtonsAspectRatio) / 100 * (buttonHeight - buttonMargins * 2)
@@ -30,16 +31,26 @@ PlasmoidItem {
     property bool widgetHovered: widgetHoverHandler.hovered
     property bool vertical: plasmoid.formFactor === PlasmaCore.Types.Vertical
     property bool leftEdgeLocation: plasmoid.location === PlasmaCore.Types.LeftEdge
-    property bool hideWidget: !tasksModel.hasActiveWindow && plasmoid.configuration.widgetElementsDisabledMode === WidgetElement.DisabledMode.Hide
+    property bool hideWidget: !editMode && (!tasksModel.hasActiveWindow || (plasmoid.configuration.widgetActiveTaskSource === ActiveTasksModel.ActiveTaskSource.LastActiveMaximized && !tasksModel.activeWindow.maximized)) && plasmoid.configuration.widgetElementsDisabledMode === WidgetElement.DisabledMode.Hide
     property bool editMode: Plasmoid.containment.corona?.editMode ?? false
 
     signal invokeKWinShortcut(string shortcut)
     signal widgetElementsLayoutUpdated
 
+    onHideWidgetChanged: root.widgetElementsLayoutUpdated()
+
     Plasmoid.constraintHints: Plasmoid.CanFillArea
-    Plasmoid.status: hideWidget ? PlasmaCore.Types.HiddenStatus : PlasmaCore.Types.ActiveStatus
-    Layout.fillWidth: !vertical && plasmoid.configuration.widgetFillWidth
-    Layout.fillHeight: vertical && plasmoid.configuration.widgetFillWidth
+    Plasmoid.status: (!editMode && hideWidget) ? PlasmaCore.Types.HiddenStatus : PlasmaCore.Types.ActiveStatus
+    visible: editMode || !hideWidget
+    Layout.fillWidth: !hideWidget && !vertical && plasmoid.configuration.widgetFillWidth
+    Layout.fillHeight: !hideWidget && vertical && plasmoid.configuration.widgetFillWidth
+
+    Layout.minimumWidth: hideWidget ? 0 : -1
+    Layout.minimumHeight: hideWidget ? 0 : -1
+    Layout.preferredWidth: hideWidget ? 0 : -1
+    Layout.preferredHeight: hideWidget ? 0 : -1
+    Layout.maximumWidth: hideWidget ? 0 : -1
+    Layout.maximumHeight: hideWidget ? 0 : -1
     preferredRepresentation: fullRepresentation
     onInvokeKWinShortcut: function (shortcut) {
         if (tasksModel.hasActiveWindow)
@@ -133,10 +144,11 @@ PlasmoidItem {
         Kirigami.Icon {
             property var modelData
 
-            height: root.elementHeight
+            height: root.iconSize
             width: height
             Layout.alignment: root.widgetAlignment
             Layout.preferredWidth: width
+            Layout.preferredHeight: height
             source: tasksModel.activeWindow.icon || "window"
             enabled: tasksModel.hasActiveWindow && !!tasksModel.activeWindow.icon
         }
@@ -268,18 +280,19 @@ PlasmoidItem {
 
     fullRepresentation: Item {
         id: representationProxy
+        visible: editMode || !root.hideWidget
 
-        Layout.fillWidth: root.vertical ? null : plasmoid.configuration.widgetFillWidth
-        Layout.fillHeight: root.vertical ? plasmoid.configuration.widgetFillWidth : null
+        Layout.fillWidth: !root.hideWidget && (root.vertical ? null : plasmoid.configuration.widgetFillWidth)
+        Layout.fillHeight: !root.hideWidget && (root.vertical ? plasmoid.configuration.widgetFillWidth : null)
 
-        Layout.minimumWidth: root.vertical ? widgetRow.Layout.minimumHeight : widgetRow.Layout.minimumWidth
-        Layout.minimumHeight: root.vertical ? widgetRow.Layout.minimumWidth : widgetRow.Layout.minimumHeight
+        Layout.minimumWidth: root.hideWidget ? 0 : (root.vertical ? widgetRow.Layout.minimumHeight : widgetRow.Layout.minimumWidth)
+        Layout.minimumHeight: root.hideWidget ? 0 : (root.vertical ? widgetRow.Layout.minimumWidth : widgetRow.Layout.minimumHeight)
 
-        Layout.maximumWidth: root.vertical ? widgetRow.Layout.maximumHeight : widgetRow.Layout.maximumWidth
-        Layout.maximumHeight: root.vertical ? widgetRow.Layout.maximumWidth : widgetRow.Layout.maximumHeight
+        Layout.maximumWidth: root.hideWidget ? 0 : (root.vertical ? widgetRow.Layout.maximumHeight : widgetRow.Layout.maximumWidth)
+        Layout.maximumHeight: root.hideWidget ? 0 : (root.vertical ? widgetRow.Layout.maximumWidth : widgetRow.Layout.maximumHeight)
 
-        Layout.preferredWidth: root.vertical ? widgetRow.Layout.preferredHeight : widgetRow.Layout.preferredWidth
-        Layout.preferredHeight: root.vertical ? widgetRow.Layout.preferredWidth : widgetRow.Layout.preferredHeight
+        Layout.preferredWidth: root.hideWidget ? 0 : (root.vertical ? widgetRow.Layout.preferredHeight : widgetRow.Layout.preferredWidth)
+        Layout.preferredHeight: root.hideWidget ? 0 : (root.vertical ? widgetRow.Layout.preferredWidth : widgetRow.Layout.preferredHeight)
 
         MouseHandlers {
             Component.onCompleted: {
@@ -294,6 +307,7 @@ PlasmoidItem {
 
         RowLayout {
             id: widgetRow
+            visible: editMode || !root.hideWidget
 
             spacing: plasmoid.configuration.widgetSpacing
             anchors.left: parent.left
@@ -370,17 +384,27 @@ PlasmoidItem {
                 target: root
 
                 function onWidgetElementsLayoutUpdated() {
-                    var preferredWidth = plasmoid.configuration.widgetFillWidth ? widgetRow.calculatePreferredWidth() : -1;
+                    var preferredWidth = root.hideWidget ? 0 : (plasmoid.configuration.widgetFillWidth ? widgetRow.calculatePreferredWidth() : -1);
                     widgetRow.Layout.preferredWidth = preferredWidth;
                 }
             }
 
             function calculatePreferredWidth() {
+                if (root.hideWidget) {
+                    return 0;
+                }
                 var repeater = widgetElementsRepeater.visible ? widgetElementsRepeater : widgetElementsMaximizedRepeater;
-                var preferredWidth = (repeater.count - 1) * widgetRow.spacing;
+                var preferredWidth = 0;
+                var visibleCount = 0;
                 for (var i = 0; i < repeater.count; i++) {
                     var item = repeater.itemAt(i);
-                    preferredWidth += Utils.calculateItemPreferredWidth(item);
+                    if (item && item.visible) {
+                        preferredWidth += Utils.calculateItemPreferredWidth(item);
+                        visibleCount++;
+                    }
+                }
+                if (visibleCount > 1) {
+                    preferredWidth += (visibleCount - 1) * widgetRow.spacing;
                 }
                 if (preferredWidth < widgetRow.Layout.minimumWidth) {
                     return widgetRow.Layout.minimumWidth;

@@ -67,12 +67,12 @@ TaskManager.TasksModel {
     function filterTask(index) {
         if (!index || !index.valid)
             return false;
-        if (plasmoid.configuration.widgetActiveTaskFilterNotMaximized)
+        if (plasmoid.configuration.widgetActiveTaskSource === ActiveTasksModel.ActiveTaskSource.LastActiveMaximized || plasmoid.configuration.widgetActiveTaskFilterNotMaximized)
             return tasksModel.data(index, TaskManager.AbstractTasksModel.IsMaximized) || false;
         return true;
     }
 
-    screenGeometry: plasmoid.containment.screenGeometry
+    screenGeometry: plasmoid.containment?.screenGeometry ?? Qt.rect(0, 0, 0, 0)
     activity: activityInfo.currentActivity
     virtualDesktop: virtualDesktopInfo.currentDesktop
     filterByActivity: plasmoid.configuration.widgetActiveTaskFilterByActivity
@@ -80,12 +80,34 @@ TaskManager.TasksModel {
     filterByVirtualDesktop: plasmoid.configuration.widgetActiveTaskFilterByVirtualDesktop
     filterHidden: true
     filterMinimized: true
-    filterNotMaximized: plasmoid.configuration.widgetActiveTaskSource == ActiveTasksModel.ActiveTaskSource.LastActiveMaximized
+    filterNotMaximized: plasmoid.configuration.widgetActiveTaskSource === ActiveTasksModel.ActiveTaskSource.LastActiveMaximized || plasmoid.configuration.widgetActiveTaskFilterNotMaximized
+    property int activeTaskSource: plasmoid.configuration.widgetActiveTaskSource
+    property bool activeTaskFilterNotMaximized: plasmoid.configuration.widgetActiveTaskFilterNotMaximized
+
+    onActiveTaskSourceChanged: updateActiveTaskIndex()
+    onActiveTaskFilterNotMaximizedChanged: updateActiveTaskIndex()
+    onFilterByActivityChanged: updateActiveTaskIndex()
+    onFilterByScreenChanged: updateActiveTaskIndex()
+    onFilterByVirtualDesktopChanged: updateActiveTaskIndex()
+    onFilterNotMaximizedChanged: updateActiveTaskIndex()
+
     onDataChanged: function (from, to, roles) {
-        if (hasActiveWindow && activeTaskIndex >= from && activeTaskIndex <= to)
-            updateActiveTaskIndex();
-        else if (!hasActiveWindow && getFirstRowIndex() >= from && getFirstRowIndex() <= to)
-            updateActiveTaskIndex();
+        updateActiveTaskIndex();
+    }
+    onRowsInserted: function (parent, first, last) {
+        updateActiveTaskIndex();
+    }
+    onRowsRemoved: function (parent, first, last) {
+        updateActiveTaskIndex();
+    }
+    onRowsMoved: function (parent, start, end, destination, row) {
+        updateActiveTaskIndex();
+    }
+    onModelReset: function () {
+        updateActiveTaskIndex();
+    }
+    onLayoutChanged: function () {
+        updateActiveTaskIndex();
     }
     onActiveTaskChanged: updateActiveTaskIndex()
     onCountChanged: updateActiveTaskIndex()

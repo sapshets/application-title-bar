@@ -65,7 +65,7 @@ QtObject {
             return shadeable;
         case ActiveWindow.Action.AppMenu:
             return hasAppMenu;
-        case ActiveWindow.Action.Fullscreen:
+        case ActiveWindow.Action.FullScreen:
             return fullScreenable;
         case ActiveWindow.Action.Resize:
             return resizable;

@@ -37,14 +37,14 @@ QtObject {
         PlasmaCore.Action {
             text: i18n("&Move")
             icon.name: "transform-move"
-            enabled: tasksModel.activeTask.movable
+            enabled: tasksModel.activeWindow.movable
             checkable: false
             onTriggered: tasksModel.activeWindow.actionCall(ActiveWindow.Action.Move)
         },
         PlasmaCore.Action {
             text: i18n("&Resize")
             icon.name: "image-resize-symbolic"
-            enabled: tasksModel.activeTask.resizable
+            enabled: tasksModel.activeWindow.resizable
             checkable: false
             onTriggered: tasksModel.activeWindow.actionCall(ActiveWindow.Action.Resize)
         },
@@ -80,7 +80,7 @@ QtObject {
         PlasmaCore.Action {
             text: i18n("&Close")
             icon.name: "window-close"
-            enabled: tasksModel.activeTask.closable
+            enabled: tasksModel.activeWindow.closable
             checkable: false
             onTriggered: tasksModel.activeWindow.actionCall(ActiveWindow.Action.Close)
         },

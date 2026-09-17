@@ -30,10 +30,13 @@ PointHandler {
     dragThreshold: cfg.windowTitleDragThreshold
     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
     onActiveChanged: function () {
-        if (active && (!cfg.windowTitleDragOnlyMaximized || tasksModel.activeWindow.maximized))
+        if (active && (!cfg.windowTitleDragOnlyMaximized || tasksModel.activeWindow.maximized)) {
+            if (tasksModel.hasActiveWindow && !tasksModel.activeWindow.active)
+                tasksModel.activeWindow.actionCall(ActiveWindow.Action.Activate);
             dragInProgress = true;
-        else
+        } else {
             stopDrag();
+        }
     }
     onPointChanged: function () {
         if (active && dragInProgress && point && point.pressPosition && point.position) {

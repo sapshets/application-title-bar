@@ -28,6 +28,7 @@ KCM.SimpleKCM {
     property int cfg_widgetVerticalAlignment
     property alias cfg_widgetFillWidth: widgetFillWidth.checked
     property alias cfg_widgetToolTipMode: widgetToolTipMode.currentIndex
+    property alias cfg_windowIconSize: windowIconSize.value
     property alias cfg_windowTitleMinimumWidth: windowTitleMinimumWidth.value
     property alias cfg_windowTitleMaximumWidth: windowTitleMaximumWidth.value
     property alias cfg_windowTitleFontSize: windowTitleFontSize.value
@@ -125,7 +126,7 @@ KCM.SimpleKCM {
             Kirigami.FormData.label: i18n("Vertical alignment:")
             model: [
                 {
-                    "value": Qt.AlignLeft,
+                    "value": Qt.AlignTop,
                     "text": i18n("Top")
                 },
                 {
@@ -284,6 +285,33 @@ You can install more of regular Aurorae themes for window decorations in System 
 
             KCM.ContextualHelpButton {
                 toolTipText: i18n("Animation speed of buttons transitions in milliseconds.")
+            }
+        }
+
+        Kirigami.Separator {
+            Kirigami.FormData.isSection: true
+            Kirigami.FormData.label: i18n("Window Icon")
+        }
+
+        RowLayout {
+            Kirigami.FormData.label: i18n("Icon size:")
+
+            SpinBox {
+                id: windowIconSize
+                from: 0
+                to: 256
+                stepSize: 2
+                textFromValue: function(value, locale) {
+                    return value === 0 ? i18n("Auto") : value + " px";
+                }
+                valueFromText: function(text, locale) {
+                    let cleaned = text.replace(" px", "").trim();
+                    return cleaned === i18n("Auto") || cleaned === "" ? 0 : parseInt(cleaned);
+                }
+            }
+
+            KCM.ContextualHelpButton {
+                toolTipText: i18n("Size of the application icon in pixels. Set to 0 (Auto) to automatically fit the panel height.")
             }
         }
 

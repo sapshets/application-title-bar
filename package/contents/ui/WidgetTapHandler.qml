@@ -34,19 +34,27 @@ TapHandler {
     exclusiveSignals: TapHandler.SingleTap | TapHandler.DoubleTap
     onSingleTapped: function (eventPoint, button) {
         if (!isLongPressEventHandled()) {
-            if (button === Qt.LeftButton && cfg.widgetMouseAreaLeftClickAction != "")
-                invokeKWinShortcut(cfg.widgetMouseAreaLeftClickAction);
-            else if (button === Qt.MiddleButton && cfg.widgetMouseAreaMiddleClickAction != "")
+            if (button === Qt.LeftButton) {
+                if (tasksModel.hasActiveWindow && !tasksModel.activeWindow.active)
+                    tasksModel.activeWindow.actionCall(ActiveWindow.Action.Activate);
+                if (cfg.widgetMouseAreaLeftClickAction != "")
+                    invokeKWinShortcut(cfg.widgetMouseAreaLeftClickAction);
+            } else if (button === Qt.MiddleButton && cfg.widgetMouseAreaMiddleClickAction != "") {
                 invokeKWinShortcut(cfg.widgetMouseAreaMiddleClickAction);
+            }
         }
     }
     onDoubleTapped: function (eventPoint, button) {
         if (!isLongPressEventHandled()) {
             stopLongPressTimer();
-            if (button === Qt.LeftButton && cfg.widgetMouseAreaLeftDoubleClickAction != "")
-                invokeKWinShortcut(cfg.widgetMouseAreaLeftDoubleClickAction);
-            else if (button === Qt.MiddleButton && cfg.widgetMouseAreaMiddleDoubleClickAction != "")
+            if (button === Qt.LeftButton) {
+                if (tasksModel.hasActiveWindow && !tasksModel.activeWindow.active)
+                    tasksModel.activeWindow.actionCall(ActiveWindow.Action.Activate);
+                if (cfg.widgetMouseAreaLeftDoubleClickAction != "")
+                    invokeKWinShortcut(cfg.widgetMouseAreaLeftDoubleClickAction);
+            } else if (button === Qt.MiddleButton && cfg.widgetMouseAreaMiddleDoubleClickAction != "") {
                 invokeKWinShortcut(cfg.widgetMouseAreaMiddleDoubleClickAction);
+            }
         }
     }
 
